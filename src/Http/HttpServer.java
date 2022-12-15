@@ -85,14 +85,14 @@ public class HttpServer{
             // infinite wait loop to listen and pick up clients
             while (true){
                 // listening on port
-                System.out.printf("Accepting connectionz on port %d.\n", portNum);
+                System.out.printf("Accepting connections on port %d.\n", portNum);
                 this.socket = serverSoc.accept();
 
                 //creates a new connection for client when socket received client
                 HttpClientConnection client = new HttpClientConnection(socket);
                 System.out.println("Client connected on " + this.socket.getLocalPort());
                 //add client to scheduler to be managed
-                this.threadpool.submit(client);
+                this.threadPool.submit(client);
         
             }
         } catch (IOException e) {

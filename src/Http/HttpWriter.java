@@ -1,5 +1,5 @@
 // TODO: Change to your package 
-package mywebserver;
+package Http;
 
 import java.io.*;
 
