@@ -16,13 +16,17 @@ public class HttpClientConnection implements Runnable {
     @Override
     public void run() {
 
-        System.out.printf("New connection on port %d\n", socket.getPort());
-
+        System.out.printf("New connection on port %d\n", this.socket.getPort());
+        // opening data input stream through the socket
+        InputStream is = this.socket.getInputStream();
+        InputStreamReader isr = new InputStreamReader(is);
+        BufferedReader br = new BufferedReader(isr);
+        
         try {
-            String payload = IOUtils.read(socket);
-            System.out.println("Received>>>" + payload);
+            String line = br.readLine();
+            System.out.println("Client msg received> " + line);
 
-            String[] values = payload.split(" ");
+            // String[] values = msg.split(" ");
 
             // Integer count = Integer.parseInt(values[0]);
             // Integer range = Integer.parseInt(values[1]);
@@ -30,6 +34,7 @@ public class HttpClientConnection implements Runnable {
             String response = "I got your message";
 
             IOUtils.write(socket, response);
+
         } catch (Exception ex) {
         } finally {
             try {
@@ -40,7 +45,4 @@ public class HttpClientConnection implements Runnable {
 
     }
 
-    // public String request() {
-
-    // }
 }

@@ -15,7 +15,7 @@ import java.util.concurrent.Executors;
 
 //https://docs.oracle.com/en/cloud/paas/iot-cloud/iotsp/com/oracle/iot/client/message/RequestMessage.html
 // main web server class
-public class HttpServer {
+public class HttpServer{
     // Task 3
     /*--port <port number> - the port that the server will listen to. If
     this is not specified, then default to port 3000*/
@@ -24,36 +24,77 @@ public class HttpServer {
     and images are stored. If not specified, default to static directory in
     the current path.*/
     // server command defaults
-    // set 
     private Integer portNum = 3000;
-    private String docRootDir1 = "./target";
-    private String docRootDir2 = "";
+    private String[] directoryList = {".\\static\\"};
     private ServerSocket serverSoc;
     private Socket socket;
+    ExecutorService threadPool;
 
     //constructors ==============================================================================
-    //takes in params to allow you to change them
-    public HttpServer(Integer portNum, String docRootDir1, String docRootDir2){
-        this.portNum = portNum;
-        this.docRootDir1 = docRootDir1;
-        this.docRootDir2 = docRootDir2;
+    //takes in the commands and processes it
+    public HttpServer(String[] args){
+        // Task 3
+        // checking for port cmds
+        if (args.length > 4) {
+            System.out.println(
+                "Usage: java -cp Http.Main --port <port number> --docRoot <directory 1>:<directory2>");
+            } else {
+                //process the port and docRoot
+                for (int i = 0; i < args.length; i++) {
+                    if (args[i].equalsIgnoreCase("--port")) {
+                        portNum = Integer.parseInt(args[i + 1]);
+                        // System.out.println("portNumber: " + portNum);
+                    }
+                    if (args[i].equalsIgnoreCase("--docRoot")) {
+                        this.directoryList = args[i+1].split(":");
+                        // System.out.println("Directories input:" + args[i+1]);
+                    }
+            }
+                       
+        }
+        // checking for docRoot path validity. Processing each path in the path list
+        for (int i = 0; i < directoryList.length; i++) {
+            System.out.println(directoryList[i]);
+            Path path = Paths.get(directoryList[i]); // Path p = Paths.get(String <FolderName>);
+            if (!Files.isDirectory(path)) {
+                try {
+                    Files.createDirectory(path);
+                    System.out.printf("File path %s created.\n", directoryList[i]);
+                } catch (IOException e) {
+                    System.out.println("Error: IO Exception, directory does not exist: " + e.getMessage());
+                    System.exit(1);
+                }
+            }
+        }
     }
 
     //methods ===================================================================================
     public void start() {
         
-        
+        // Task 4 - check for problems on port and docRoot
         try {
+            // task 5 - create thread pool
+            this.threadPool = Executors.newFixedThreadPool(3);
+            System.out.println("Thread pool created.");
+
             // opening a port with either default or specified port number
             //open server socket for clients
-            System.out.printf("Opening Socket on port %d. \nDirectory1: %s \nDirectory2: %s \n", 
-            this.portNum, this.docRootDir1, this.docRootDir2);
+            System.out.printf("Opening Socket on port %d.\n", this.portNum);
             this.serverSoc = new ServerSocket(this.portNum);
-            // Task 4 - check for problems on port and docRoot
-            // listening on port
-            System.out.printf("Accepting connection on %d\n", portNum);
-            this.socket = serverSoc.accept();
+            
+            // infinite wait loop to listen and pick up clients
+            while (true){
+                // listening on port
+                System.out.printf("Accepting connectionz on port %d.\n", portNum);
+                this.socket = serverSoc.accept();
 
+                //creates a new connection for client when socket received client
+                HttpClientConnection client = new HttpClientConnection(socket);
+                System.out.println("Client connected on " + this.socket.getLocalPort());
+                //add client to scheduler to be managed
+                this.threadpool.submit(client);
+        
+            }
         } catch (IOException e) {
             System.out.println("Error when opening the socket. Server closing.");
             e.printStackTrace();
@@ -70,58 +111,13 @@ public class HttpServer {
             System.exit(1);
         }
 
-        // checking for docRoot path validity. If folder is not there then add the
-        // folder, or throw the exception and exit server
-        Path path1 = Paths.get(docRootDir1); // Path p = Paths.get(String <FolderName>);
-        Path path2 = Paths.get(docRootDir2);
-        if (!Files.isDirectory(path1)) {
-            try {
-                Files.createDirectory(path1);
-            } catch (IOException e) {
-                System.out.println("Error: IO Exception, directory does not exist." + e.getMessage());
-                System.exit(1);
-            }
-        }
-        if (!Files.isDirectory(path2)) {
-            try {
-                Files.createDirectory(path2);
-            } catch (IOException e) {
-                System.out.println("Error: IO Exception, directory does not exist." + e.getMessage());
-                System.exit(1);
-            }
-        }
-
-        try{
-            // // task 5 - create thread pool
-            ExecutorService threadPool = Executors.newFixedThreadPool(3);
-
-            // // opening data input stream through the socket
-            InputStream is = socket.getInputStream();
-            BufferedInputStream bis = new BufferedInputStream(is);
-            DataInputStream dis = new DataInputStream(bis);
-
-            // infinite wait loop to pick up client msgs
-            while (true) {
-                String msg = dis.readUTF();
-                System.out.println("Client msg received> " + msg);
-                if (msg.equalsIgnoreCase("exit")){
-                    System.out.println("bye bye");
-                }
-            }
-            // // clean up
-            // threadPool.shutdown();
-        }catch(SecurityException se){
-            se.printStackTrace();
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-        System.out.println("Closing socket and thread pool...");
-        try{
-            serverSoc.close();
-        }catch (IOException e){
-            e.printStackTrace();
-            System.out.println(e.getMessage());
-        }
+        // System.out.println("Closing socket and thread pool...");
+        // try{
+        //     serverSoc.close();
+        // }catch (IOException e){
+        //     e.printStackTrace();
+        //     System.out.println(e.getMessage());
+        // }
 
     }
 }
