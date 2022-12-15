@@ -40,7 +40,7 @@ public class HttpClientConnection implements Runnable {
 
     }
 
-    public String request() {
+    // public String request() {
 
-    }
+    // }
 }
