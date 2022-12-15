@@ -120,4 +120,26 @@ public class HttpServer{
         // }
 
     }
+
+    public Integer getPortNum() {
+        return portNum;
+    }
+
+    public String[] getDirectoryList() {
+        return directoryList;
+    }
+
+    public ServerSocket getServerSoc() {
+        return serverSoc;
+    }
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public ExecutorService getThreadPool() {
+        return threadPool;
+    }
+
+    
 }
