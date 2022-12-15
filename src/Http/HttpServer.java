@@ -89,11 +89,11 @@ public class HttpServer{
                 this.socket = serverSoc.accept();
 
                 //creates a new connection for client when socket received client
-                HttpClientConnection client = new HttpClientConnection(socket);
+                HttpClientConnection client = new HttpClientConnection(socket, this.directoryList);
                 System.out.println("Client connected on " + this.socket.getLocalPort());
                 //add client to scheduler to be managed
                 this.threadPool.submit(client);
-        
+                System.out.println();
             }
         } catch (IOException e) {
             System.out.println("Error when opening the socket. Server closing.");

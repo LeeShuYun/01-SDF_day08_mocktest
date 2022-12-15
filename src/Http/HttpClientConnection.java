@@ -21,9 +21,11 @@ public class HttpClientConnection implements Runnable {
     // handles the the request and response communication between the server and a
     // client (browser)
     private Socket socket;
+    private String[] directories;
 
-    public HttpClientConnection(Socket socket) {
+    public HttpClientConnection(Socket socket, String[] filePaths) {
         this.socket = socket;
+        this.directories = filePaths;
     }
 
     @Override
@@ -36,55 +38,70 @@ public class HttpClientConnection implements Runnable {
             BufferedReader br = new BufferedReader(isr);
             System.out.printf("Client moved to port %d\n", this.socket.getPort());
 
+            //reading the request
             String line = br.readLine();
             System.out.println("Client msg received> " + line);
 
             // String response = "I got your message";
-            String htmlFile = "";
+            //prep work for outputting later
             OutputStream os = this.socket.getOutputStream();
             HttpWriter httpWriter = new HttpWriter(os);
+
+            
+            //reading as long as there's a request. 
+            //Parsing request
             if (line != null) {
-                String[] lineParseList = line.trim().split(" ");
-
-                //checking if it's a GET
-                if (!lineParseList[0].equals("GET")) {
+                String[] lineParseList = line.trim().split(" "); //splits GET / HTTP/1.1 into list
+                String command = lineParseList[0];
+                String siteFileName = lineParseList[1];
+                
+                // checking if first word is a GET, if it's not reject everything
+                if (!command.equalsIgnoreCase("GET")) {
                     httpWriter.writeString("HTTP/1.1 405 Method Not Allowed \n");
-
                     httpWriter.writeString("");
-                    httpWriter.writeString(lineParseList[0] + " not supported \n");
+                    httpWriter.writeString(command + " not supported \n");
                 }
-                //replacing the / with /index.html
-                if (lineParseList[1].equals("/") || lineParseList[1].equals("/index.html")){
-                    lineParseList[1] = "index.html";
+                // replacing the / with /index.html
+                if (siteFileName.equals("/") || siteFileName.equals("/index.html")) {
+                    siteFileName = "index.html";
+                    System.out.println("The site file name is:" + siteFileName);
                 }
-                //when file doesn't exist
-                Path path = Paths.get(lineParseList[1]);                
-                if (!Files.isDirectory(path)){
-                    httpWriter.writeString("HTTP/1.1 404 Not Found");
-                    httpWriter.writeString("");
-                    httpWriter.writeString(lineParseList[1] + " not found");
-                    //close socket
-                    socket.close();
-                }else{
-                    //when file exists
-                    httpWriter.writeString("HTTP/1.1 200 OK");
-                    httpWriter.writeString("Content-Type: text/html");
-                    httpWriter.writeString(lineParseList[1] + " not found");
-                    File siteFile = new File(htmlFile);
-                    httpWriter.writeBytes(siteFile);
+                // CASE: when file doesn't exist
+                // checking all directories for the html
+                Path path = Paths.get(folder, resource);
+                File file = path.toFile();
+                for (String filePath : this.directories) {
+                    String fullPath = filePath + siteFileName;
+                    System.out.println(fullPath);
+                    File file = new File(fullPath);
+                    Path path = Paths.get(fullPath);
+                    //checking if it exists
+                    if (Files.isDirectory(path)) { //try is Exists
+                        // when file exists
+                        httpWriter.writeString("HTTP/1.1 200 OK \nContent-Type: text/html");
+                        httpWriter.writeString("Content-Size: ");
+                        httpWriter.writeString("");
+                        httpWriter.writeString(lineParseList[1] + " not found");
+                        // File siteFile = new File(htmlFile);
+                        // httpWriter.writeBytes(siteFile);
+                    } else {
+                        httpWriter.writeString("HTTP/1.1 404 Not Found");
+                        httpWriter.writeString("");
+                        httpWriter.writeString(lineParseList[1] + " not found");
+                        // close socket
+                        socket.close();
+                    }
                 }
-
-                if (image){
-                    //sending images
-                    // File img = new File(imgFile);
-                    // FileInputStream image = new FileInputStream(img);
-                    httpWriter.writeString("Content-Type: image/png");
-                    // httpWriter.writeBytes(fis);
-                }
-
+                
+                // if (image){
+                    // sending images
+                // File img = new File(imgFile);
+                // FileInputStream image = new FileInputStream(img);
+                // httpWriter.writeString("Content-Type: image/png");
+                // httpWriter.writeBytes(fis);
+                // }
 
             }
-
 
         } catch (Exception ex) {
             ex.printStackTrace();
